@@ -151,6 +151,8 @@
 //  };
 
 // export default Auth
+import.meta.env.VITE_BACKEND_URL
+
 import { useState } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -179,7 +181,7 @@ const Auth = ({ type }) => {
     if (!token) return;
 
     try {
-      await axios.post("http://localhost:8000/api/v1/users/logout", { token });
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, { token });
 
       updateUser(null);                 // clear context
       localStorage.removeItem("userData"); // clear storage
@@ -200,10 +202,11 @@ const Auth = ({ type }) => {
     try {
       const endpoint = type === "signup" ? "/register" : "/login";
 
-      const res = await axios.post(
-        "http://localhost:8000/api/v1/users" + endpoint,
-        formData
-      );
+  const res = await axios.post(
+  `${import.meta.env.VITE_BACKEND_URL}/api/v1/users${endpoint}`,
+  formData
+);
+
 
       toast.success("Success!");
 

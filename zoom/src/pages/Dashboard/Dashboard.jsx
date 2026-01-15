@@ -1,3 +1,4 @@
+import.meta.env.VITE_BACKEND_URL
 
 import React, { useEffect, useRef, useState } from 'react';
 import socketInstance from '../socketio/VideoCallSocket.jsx';
@@ -182,8 +183,11 @@ const startCall = async (userToCall) => {
 
   const loadChatHistory = async (userId) => {
   try {
-const res = await axios.get(`http://localhost:8000/api/v1/chat/${userId}`, {
-  headers: { authorization: user.token }
+const res = await axios.get(
+  `${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/${userId}`,
+  {
+    headers: { authorization: user.token }
+  
 });
 
 
@@ -394,7 +398,7 @@ const allusers = async () => {
       return;
     }
 
-    const res = await axios.get("http://localhost:8000/api/v1/users", {
+    const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users`, {
       headers: { authorization: token }
     });
 
@@ -439,6 +443,14 @@ const handelSelectedUser = (userId) => {
   );
 
   const handleLogout = async () => {
+
+    console.log("LOGOUT DEBUG ↓↓↓");
+console.log("user:", user);
+console.log("token:", user?.token);
+console.log("callAccepted:", callAccepted);
+console.log("reciveCall:", reciveCall);
+console.log("backend url:", import.meta.env.VITE_BACKEND_URL);
+
     if (callAccepted || reciveCall) {
       alert("You must end the call before logging out.");
       return;
@@ -450,7 +462,7 @@ if (!token) {
   console.log("⚠ No token yet. User not loaded.");
   return;
 }
-      await axios.post("http://localhost:8000/api/v1/users/logout", {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, {
         token: user?.token,
       });
       socket.off("disconnect");

@@ -1,4 +1,7 @@
+import.meta.env.VITE_BACKEND_URL
+
 import axios from "axios";
+
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -14,7 +17,7 @@ const LogoutButton = () => {
     }
 
     try {
-      await axios.post("http://localhost:8000/api/v1/users/logout", { token });
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, { token });
 
       // remove token from storage
       localStorage.removeItem("token");

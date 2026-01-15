@@ -18,6 +18,11 @@ router.get("/search", authMiddleware,searchUser);
 
 // Optional get user by ID
 router.get("/:id", authMiddleware,getUserById);
+// router.post("/logout", (req, res) => {
+//   console.log("🔥 LOGOUT ROUTE HIT");
+//   res.json({ ok: true });
+// });
+router.get("/logout", logout);
 // router.route("/add_to_activity").post(addToHistory)
 // router.route("/get_all_activity").get(getUserHistory)
 // router.get("/allusers", authMiddleware, getAllUsers); 

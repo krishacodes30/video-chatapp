@@ -49,12 +49,14 @@ import { createServer } from "node:http";//connect socket server nad app server
 import { Server } from "socket.io";
 
 import mongoose from "mongoose";
-import { connectToSocket } from "../backend/src/controllers/socketManager.js";
+//import { connectToSocket } from "../backend/src/controllers/socketManager.js";
 
 
 import cors from "cors";
-import userRoutes from "../backend/src/routes/user.routes.js";
-import chatRoutes from "../backend/src/routes/chat.routes.js";
+import userRoutes from "./src/routes/user.routes.js";
+import chatRoutes from "./src/routes/chat.routes.js";
+import { connectToSocket } from "./src/controllers/socketManager.js";
+
 
 
 // import express from "express";
@@ -72,12 +74,28 @@ const server = createServer(app);
 
 // 🔌 Socket.IO
 connectToSocket(server);
+app.use((req, res, next) => {
+  console.log("REQ:", req.method, req.url);
+  next();
+});
+
 
 // 🌍 Middleware
+// app.use(cors({
+//   origin: "*", // TEMP: allow all (we’ll lock later)
+//   credentials: true
+// }));
+
 app.use(cors({
-  origin: "*", // TEMP: allow all (we’ll lock later)
-  credentials: true
+  origin: [
+    "http://localhost:5173",
+    //"https://your-frontend-url.onrender.com" // add later
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
+app.options("*", cors());
+
 
 app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ extended: true }));
