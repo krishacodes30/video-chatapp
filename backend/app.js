@@ -89,11 +89,15 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    //"https://your-frontend-url.onrender.com" // add later
+    "https://video-chatapp-frontend.onrender.com"
   ],
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+app.options("*", cors());
+
 app.options("*", cors());
 
 
