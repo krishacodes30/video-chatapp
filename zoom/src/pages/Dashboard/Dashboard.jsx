@@ -442,39 +442,58 @@ const handelSelectedUser = (userId) => {
     (u.email || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleLogout = async () => {
+//   const handleLogout = async () => {
 
-    console.log("LOGOUT DEBUG ↓↓↓");
-console.log("user:", user);
-console.log("token:", user?.token);
-console.log("callAccepted:", callAccepted);
-console.log("reciveCall:", reciveCall);
-console.log("backend url:", import.meta.env.VITE_BACKEND_URL);
+//     console.log("LOGOUT DEBUG ↓↓↓");
+// console.log("user:", user);
+// console.log("token:", user?.token);
+// console.log("callAccepted:", callAccepted);
+// console.log("reciveCall:", reciveCall);
+// console.log("backend url:", import.meta.env.VITE_BACKEND_URL);
 
-    if (callAccepted || reciveCall) {
-      alert("You must end the call before logging out.");
-      return;
-    }
-    try {
-      // assuming logout endpoint at /api/v1/users/logout
-      const token = user?.token;
-if (!token) {
-  console.log("⚠ No token yet. User not loaded.");
-  return;
-}
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, {
-        token: user?.token,
-      });
-      socket.off("disconnect");
-      socket.disconnect();
-      socketInstance.setSocket();
-      updateUser(null);
-      localStorage.removeItem("userData");
-      navigate('/login');
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
-  };
+//     if (callAccepted || reciveCall) {
+//       alert("You must end the call before logging out.");
+//       return;
+//     }
+//     try {
+//       // assuming logout endpoint at /api/v1/users/logout
+//       const token = user?.token;
+// if (!token) {
+//   console.log("⚠ No token yet. User not loaded.");
+//   return;
+// }
+
+// console.log("LOGOUT TOKEN SENT:", user?.token);
+
+//       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, {
+//         token: user?.token,
+//       });
+//       socket.off("disconnect");
+//       socket.disconnect();
+//       socketInstance.setSocket();
+//       updateUser(null);
+//       localStorage.removeItem("userData");
+//       navigate('/login');
+//     } catch (error) {
+//       console.error("Logout failed", error);
+//     }
+//   };
+const handleLogout = () => {
+  try {
+    // 1️⃣ kill socket
+    socketInstance.disconnect();
+
+    // 2️⃣ clear auth
+    updateUser(null);
+    localStorage.removeItem("userData");
+
+    // 3️⃣ redirect
+    navigate("/login");
+
+  } catch (e) {
+    console.error("Logout error:", e);
+  }
+};
 
   return (
     <div className="flex min-h-screen bg-gray-100">

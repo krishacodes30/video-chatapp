@@ -7,29 +7,46 @@ import { useNavigate } from "react-router-dom";
 
 const LogoutButton = () => {
   const navigate = useNavigate();
+  const handleLogout = () => {
+  try {
+    // 1️⃣ kill socket
+    socketInstance.disconnect();
 
-  const handleLogout = async () => {
-    const token = localStorage.getItem("token");
+    // 2️⃣ clear auth
+    updateUser(null);
+    localStorage.removeItem("userData");
 
-    if (!token) {
-      toast.error("Not logged in");
-      return;
-    }
+    // 3️⃣ redirect
+    navigate("/login");
 
-    try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, { token });
+  } catch (e) {
+    console.error("Logout error:", e);
+  }
+};
 
-      // remove token from storage
-      localStorage.removeItem("token");
 
-      toast.success("Logged out");
+  // const handleLogout = async () => {
+  //   const token = localStorage.getItem("token");
 
-      navigate("/login");
+  //   if (!token) {
+  //     toast.error("Not logged in");
+  //     return;
+  //   }
 
-    } catch (error) {
-      toast.error("Something went wrong");
-    }
-  };
+  //   try {
+  //     await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, { token });
+
+  //     // remove token from storage
+  //     localStorage.removeItem("token");
+
+  //     toast.success("Logged out");
+
+  //     navigate("/login");
+
+  //   } catch (error) {
+  //     toast.error("Something went wrong");
+  //   }
+  // };
 
   return (
     <button

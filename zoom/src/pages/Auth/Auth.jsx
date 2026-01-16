@@ -176,22 +176,45 @@ const Auth = ({ type }) => {
   };
 
   // FIXED LOGOUT
-  const handleLogout = async () => {
-    const token = user?.token;
-    if (!token) return;
+  // const handleLogout = async () => {
+  //   const token = user?.token;
+  //   if (!token) return;
 
-    try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, { token });
+  //   try {
+  //     // await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, { token }, {
+  //      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, { token }, {
+  //   headers: {
+  //     authorization: user.token,
+  //   },
+  // });
 
-      updateUser(null);                 // clear context
-      localStorage.removeItem("userData"); // clear storage
-      toast.success("Logged out!");
-      navigate("/login");
+  //     updateUser(null);                 // clear context
+  //     localStorage.removeItem("userData"); // clear storage
+  //     toast.success("Logged out!");
+  //     navigate("/login");
 
-    } catch (error) {
-      toast.error("Logout failed");
+  //   } catch (error) {
+  //     toast.error("Logout failed");
+  //   }
+  // };
+
+const handleLogout = () => {
+  try {
+    if (socket) {
+      socket.off();        // remove all listeners
+      socket.disconnect(); // close connection
     }
-  };
+
+    updateUser(null);
+    localStorage.removeItem("userData");
+    navigate("/login");
+
+  } catch (e) {
+    console.error("Logout error:", e);
+  }
+};
+
+
 
 
   // FIXED LOGIN / SIGNUP
