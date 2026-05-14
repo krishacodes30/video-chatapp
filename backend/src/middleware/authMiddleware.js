@@ -1,9 +1,6 @@
 import httpStatus from "http-status";
 import { User } from "../models/user.model.js";
-import bcrypt, { hash } from "bcrypt"
-
-
-//import { User } from "../models/user.model.js";
+import jwt from "jsonwebtoken";
 
 export const authMiddleware = async (req, res, next) => {
     try {
@@ -14,16 +11,19 @@ export const authMiddleware = async (req, res, next) => {
             return res.status(401).json({ message: "Token not provided" });
         }
 
-        // Find user with this token
-        const user = await User.findOne({ token });
+        // Verify JWT token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Find user by ID from the decoded payload
+        const user = await User.findById(decoded.id);
 
         if (!user) {
-            return res.status(401).json({ message: "Invalid token" });
+            return res.status(401).json({ message: "User not found" });
         }
 
         req.user = user; // store user for next controllers
         next();          // GO to next controller
     } catch (e) {
-        res.status(500).json({ message: "Something went wrong" });
+        return res.status(401).json({ message: "Unauthorized: Invalid or expired token" });
     }
 };

@@ -1,8 +1,9 @@
 import httpStatus from "http-status";
 import { User } from "../models/user.model.js";
 import bcrypt, { hash } from "bcrypt"
+import jwt from "jsonwebtoken";
 
-import crypto from "crypto"
+// import crypto from "crypto"
 // import { Meeting } from "../models/meeting.model.js";
 const login = async (req, res) => {
 
@@ -22,18 +23,22 @@ const login = async (req, res) => {
         let isPasswordCorrect = await bcrypt.compare(password, user.password)
 
         if (isPasswordCorrect) {
-            let token = crypto.randomBytes(20).toString("hex");//login->token should be stored in it will affect local storage 
+            let token = jwt.sign(
+                { id: user._id, username: user.username },
+                process.env.JWT_SECRET,
+                { expiresIn: "7d" }
+            );
 
-            user.token = token;
-            await user.save();
+            // Token is no longer saved to DB, frontend will handle it via localStorage
             return res.status(httpStatus.OK).json({
-  success: true,
-  token: token,
-  user: {
-    _id: user._id,
-    username: user.username,
-    name: user.name
-  } })
+                success: true,
+                token: token,
+                user: {
+                    _id: user._id,
+                    username: user.username,
+                    name: user.name
+                }
+            });
         } else {
             return res.status(httpStatus.UNAUTHORIZED).json({ message: "Invalid Username or password" })
         }
@@ -72,26 +77,9 @@ const register = async (req, res) => {
 
 }
 const logout = async (req, res) => {
-    const { token } = req.body;
-
-    if (!token) {
-        return res.status(httpStatus.BAD_REQUEST).json({ message: "Token required" });
-    }
-
-    try {
-        const user = await User.findOne({ token });
-
-        if (!user) {
-            return res.status(httpStatus.NOT_FOUND).json({ message: "Invalid token" });
-        }
-
-        user.token = null; // or ""
-        await user.save();
-
-        return res.status(httpStatus.OK).json({ message: "Logged out successfully" });
-    } catch (e) {
-        return res.status(500).json({ message: `Something went wrong ${e}` });
-    }
+    // For stateless JWT, we don't need to invalidate the token in the DB.
+    // The frontend removes it from local storage.
+    return res.status(httpStatus.OK).json({ message: "Logged out successfully" });
 };
 
 
