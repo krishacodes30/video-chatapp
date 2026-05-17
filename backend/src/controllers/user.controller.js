@@ -3,8 +3,7 @@ import { User } from "../models/user.model.js";
 import bcrypt, { hash } from "bcrypt"
 import jwt from "jsonwebtoken";
 
-// import crypto from "crypto"
-// import { Meeting } from "../models/meeting.model.js";
+
 const login = async (req, res) => {
 
     const { username, password } = req.body;
@@ -26,10 +25,10 @@ const login = async (req, res) => {
             let token = jwt.sign(
                 { id: user._id, username: user.username },
                 process.env.JWT_SECRET,
-                { expiresIn: "7d" }
+
             );
 
-            // Token is no longer saved to DB, frontend will handle it via localStorage
+            // Token is not stored in  DB, frontend will handle it via localStorage
             return res.status(httpStatus.OK).json({
                 success: true,
                 token: token,
@@ -77,43 +76,38 @@ const register = async (req, res) => {
 
 }
 const logout = async (req, res) => {
-    // For stateless JWT, we don't need to invalidate the token in the DB.
-    // The frontend removes it from local storage.
+
     return res.status(httpStatus.OK).json({ message: "Logged out successfully" });
 };
 
 
 
-// ------------------------------------------------
-// GET ALL USERS (except logged-in user)
-// ------------------------------------------------
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({ _id: { $ne: req.user._id } }, "username name ");
 
- const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find({_id:{$ne:req.user._id}}, "username name ");
+        return res.status(200).json({
+            success: true,
+            users,
+        });
 
-    return res.status(200).json({
-      success: true,
-      users,
-    });
-
-  } catch (e) {
-    return res.status(500).json({
-      success: false,
-      message: e.message,
-    });
-  }
+    } catch (e) {
+        return res.status(500).json({
+            success: false,
+            message: e.message,
+        });
+    }
 };
 
- const searchUser = async (req, res) => {
+const searchUser = async (req, res) => {
 
     const { query } = req.query;
-    try{
-      if (!query) {
-        return res.status(400).json({ success: false, message: "Search text required" });
-    }
-    const user=await User.findOne({username:query},"name username");
-    if (!user) {
+    try {
+        if (!query) {
+            return res.status(400).json({ success: false, message: "Search text required" });
+        }
+        const user = await User.findOne({ username: query }, "name username");
+        if (!user) {
             return res.status(404).json({ success: false, message: "User not found." });
         }
         res.status(200).json({ success: true, user });
@@ -123,7 +117,7 @@ const logout = async (req, res) => {
 
 };
 
- const getUserById = async (req, res) => {
+const getUserById = async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -140,37 +134,4 @@ const logout = async (req, res) => {
 };
 
 
- export { login,searchUser, register,logout,getAllUsers,getUserById}
-// const getUserHistory = async (req, res) => {
-//     const { token } = req.query;
-
-//     try {
-//         const user = await User.findOne({ token: token });
-//         const meetings = await Meeting.find({ user_id: user.username })
-//         res.json(meetings)
-//     } catch (e) {
-//         res.json({ message: `Something went wrong ${e}` })
-//     }
-// }
-
-// const addToHistory = async (req, res) => {
-//     const { token, meeting_code } = req.body;
-
-//     try {
-//         const user = await User.findOne({ token: token });
-
-//         const newMeeting = new Meeting({
-//             user_id: user.username,
-//             meetingCode: meeting_code
-//         })
-
-//         await newMeeting.save();
-
-//         res.status(httpStatus.CREATED).json({ message: "Added code to history" })
-//     } catch (e) {
-//         res.json({ message: `Something went wrong ${e}` })
-//     }
-// }
-
-
-// export { login, register, getUserHistory, addToHistory }
+export { login, searchUser, register, logout, getAllUsers, getUserById }

@@ -1,50 +1,52 @@
-// import { io } from "socket.io-client";
-
-// class VideoCallSocket {
-//   socket = null;
-
-//   getSocket() {
-//     if (!this.socket) {
-//       this.socket = io("http://localhost:8000", {
-//         withCredentials: true,
-//         transports: ["websocket"],
-//       });
-//     }
-//     return this.socket;
-//   }
-
-//   setSocket() {
-//     if (this.socket) {
-//       this.socket.disconnect();
-//       this.socket = null;
-//     }
-//   }
-// }
-
-// const socketInstance = new VideoCallSocket();
-// export default socketInstance;
 import { io } from "socket.io-client";
 
 class VideoCallSocket {
   socket = null;
 
+
   getSocket() {
+    const token = JSON.parse(localStorage.getItem("userData"))?.token ?? null;
+
+    if (this.socket && !this.socket.auth?.token && token) {
+      console.log("🔁 Replacing unauthenticated socket with authenticated one");
+      this.socket.disconnect();
+      this.socket = null;
+    }
+
     if (!this.socket) {
+      if (!token) {
+        console.warn("⚠️ getSocket() called before login — token is missing");
+      }
+
       this.socket = io(import.meta.env.VITE_BACKEND_URL, {
-        transports: ["websocket"],
+
+        auth: { token },
+
+
+        extraHeaders: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+
         withCredentials: true,
 
-        // ✅ AUTO-RECONNECT OPTIONS (ADD HERE)
+
+        transports: ["polling", "websocket"],
+
+
         reconnection: true,
-        reconnectionAttempts: 5,        // try 5 times
-        reconnectionDelay: 1000,        // wait 1s between tries
-        reconnectionDelayMax: 5000,     // max wait 5s
-        timeout: 20000,                 // wait 20s for connection
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
       });
 
-      // (optional but useful logs)
       this.socket.on("connect", () => {
         console.log("🟢 Socket connected:", this.socket.id);
+        console.log("🔐 Transport:", this.socket.io.engine.transport.name);
+      });
+
+      this.socket.on("connect_error", (err) => {
+        console.error("❌ Socket connection error:", err.message);
       });
 
       this.socket.on("reconnect_attempt", (attempt) => {
@@ -52,7 +54,7 @@ class VideoCallSocket {
       });
 
       this.socket.on("reconnect_failed", () => {
-        console.log("❌ Reconnect failed");
+        console.error("❌ Reconnect failed after max attempts");
       });
     }
 
@@ -69,3 +71,4 @@ class VideoCallSocket {
 
 const socketInstance = new VideoCallSocket();
 export default socketInstance;
+

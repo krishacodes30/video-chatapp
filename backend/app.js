@@ -96,13 +96,19 @@ app.use((req, res, next) => {
 //   allowedHeaders: ["Content-Type", "Authorization"]
 // }));
 app.use(cors({
-  origin: true,
-  credentials: false
+  origin: ["http://localhost:5173"],
+  credentials: true,                                     // ← MUST be true for Authorization header
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],     // ← MUST list Authorization explicitly
 }));
 
-// app.options("*", cors());
+app.options("*", cors({           // handle preflight for ALL routes
+  origin: ["http://localhost:5173"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
-// app.options("*", cors());
 
 
 app.use(express.json({ limit: "40kb" }));

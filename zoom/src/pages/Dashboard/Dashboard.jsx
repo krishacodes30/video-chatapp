@@ -16,7 +16,7 @@ import axios from 'axios';
 import { v4 as uuid } from "uuid";
 
 const Dashboard = () => {
-const { user, updateUser } = useUser();
+  const { user, updateUser } = useUser();
 
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -54,13 +54,13 @@ const { user, updateUser } = useUser();
     loop: false,
     volume: 1.0,
   });
-const [chatUser, setChatUser] = useState(null);      
-const [callUser, setCallUser] = useState(null);      
+  const [chatUser, setChatUser] = useState(null);
+  const [callUser, setCallUser] = useState(null);
 
-// ✅ Add these 3 lines here
-const [showChat, setShowChat] = useState(false);
-const [chatMessages, setChatMessages] = useState([]);
-const [newMessage, setNewMessage] = useState("");
+  // ✅ Add these 3 lines here
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
 
 
   const socket = socketInstance.getSocket();
@@ -125,134 +125,134 @@ const [newMessage, setNewMessage] = useState("");
     };
   }, [user, socket]);
 
-const startCall = async (userToCall) => {
-  try {
-    const currentStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: { echoCancellation: true, noiseSuppression: true }
-    });
-
-    setStream(currentStream);
-
-    currentStream.getAudioTracks().forEach(track => (track.enabled = true));
-
-    setCallRejectedPopUp(false);
-    setIsSidebarOpen(false);
-    setCallerWating(true);
-
-    // 🚀 THIS MAKES CALL INDEPENDENT
-    setCallUser(userToCall);
-
-    const peer = new Peer({
-      initiator: true,
-      trickle: false,
-      stream: currentStream
-    });
-
-    peer.on("signal", (data) => {
-      socket.emit("callToUser", {
-        callToUserId: userToCall._id,   // ✔ CORRECT
-        signalData: data,
-        from: me,
-        name: user.username,
-        email: user.email,
-        profilepic: user.profilepic,
+  const startCall = async (userToCall) => {
+    try {
+      const currentStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: { echoCancellation: true, noiseSuppression: true }
       });
-    });
 
-    peer.on("stream", (remoteStream) => {
-      if (reciverVideo.current) {
-        reciverVideo.current.srcObject = remoteStream;
-      }
-    });
+      setStream(currentStream);
 
-    socket.once("callAccepted", (data) => {
-      setCallAccepted(true);
-      setCallerWating(false);
-      peer.signal(data.signal);
-    });
+      currentStream.getAudioTracks().forEach(track => (track.enabled = true));
 
-    connectionRef.current = peer;
-    setShowUserDetailModal(false);
+      setCallRejectedPopUp(false);
+      setIsSidebarOpen(false);
+      setCallerWating(true);
 
-  } catch (error) {
-    console.error("Error accessing media devices:", error);
-  }
-};
+      // 🚀 THIS MAKES CALL INDEPENDENT
+      setCallUser(userToCall);
+
+      const peer = new Peer({
+        initiator: true,
+        trickle: false,
+        stream: currentStream
+      });
+
+      peer.on("signal", (data) => {
+        socket.emit("callToUser", {
+          callToUserId: userToCall._id,   // ✔ CORRECT
+          signalData: data,
+          from: me,
+          name: user.username,
+          email: user.email,
+          profilepic: user.profilepic,
+        });
+      });
+
+      peer.on("stream", (remoteStream) => {
+        if (reciverVideo.current) {
+          reciverVideo.current.srcObject = remoteStream;
+        }
+      });
+
+      socket.once("callAccepted", (data) => {
+        setCallAccepted(true);
+        setCallerWating(false);
+        peer.signal(data.signal);
+      });
+
+      connectionRef.current = peer;
+      setShowUserDetailModal(false);
+
+    } catch (error) {
+      console.error("Error accessing media devices:", error);
+    }
+  };
 
 
   const loadChatHistory = async (userId) => {
-  try {
-const res = await axios.get(
-  `${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/${userId}`,
-  {
-    headers: { authorization: user.token }
-  
-});
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/${userId}`,
+        {
+          headers: { authorization: `Bearer ${user.token}` }
+
+        });
 
 
 
 
-    if (res.data.success) {
-      setChatMessages(res.data.messages);
+      if (res.data.success) {
+        setChatMessages(res.data.messages);
+      }
+
+    } catch (err) {
+      console.log(err);
     }
+  };
+  const sendMessage = () => {
+    if (!newMessage.trim()) return;
 
-  } catch (err) {
-    console.log(err);
-  }
-};
-const sendMessage = () => {
-  if (!newMessage.trim()) return;
-
-const msgObj = {
-  senderId: user._id,
-  receiverId: chatUser._id,
-  message: newMessage,
-  localId: uuid()   // ⭐ unique key for UI
-};
+    const msgObj = {
+      senderId: user._id,
+      receiverId: chatUser._id,
+      message: newMessage,
+      localId: uuid()   // ⭐ unique key for UI
+    };
 
 
 
-  // show instantly
-  setChatMessages(prev => [...prev, {
-    ...msgObj,
-    _id: "local-" + Math.random()   // temporary key
-  }]);
+    // show instantly
+    setChatMessages(prev => [...prev, {
+      ...msgObj,
+      _id: "local-" + Math.random()   // temporary key
+    }]);
+    console.log(chatUser)
+    socket.emit("send-message", msgObj);
 
-  socket.emit("send-message", msgObj);
-
-  setNewMessage("");
-};
+    setNewMessage("");
+  };
 
 
 
 
-useEffect(() => {
-socket.on("receive-message", (msg) => {
+  useEffect(() => {
+    socket.on("receive-message", (msg) => {
 
-  // 🔥 Prevent duplicate own messages from backend
-  if (msg.senderId === user._id && !msg.localId) {
-    return;
-  }
+      // 🔥 Prevent duplicate own messages from backend
+      if (msg.senderId === user._id && !msg.localId) {
+        return;
+      }
 
-  // 🔥 JUST append; don't auto-switch chat (fixes step 4)
-  setChatMessages(prev => [...prev, msg]);
-});
+      // 🔥 JUST append; don't auto-switch chat (fixes step 4)
+      setChatMessages(prev => [...prev, msg]);
+    });
 
 
-  return () => socket.off("receive-message");
-}, [socket, chatUser, users]);
+    return () => socket.off("receive-message");
+  }, [socket, chatUser, users]);
 
-// socket.on("receive-message", (msg) => {
-//     if (selectedUser?._id !== msg.senderId) {
-//         // open chat with that user automatically
-//         const sender = users.find(u => u._id === msg.senderId);
-//         setSelectedUser(sender);
-//         setChatUser(sender);
-//         loadChatHistory(sender._id);
-//     }
-//     setChatMessages(prev => [...prev, msg]);
-// });
+  // socket.on("receive-message", (msg) => {
+  //     if (selectedUser?._id !== msg.senderId) {
+  //         // open chat with that user automatically
+  //         const sender = users.find(u => u._id === msg.senderId);
+  //         setSelectedUser(sender);
+  //         setChatUser(sender);
+  //         loadChatHistory(sender._id);
+  //     }
+  //     setChatMessages(prev => [...prev, msg]);
+  // });
 
 
 
@@ -375,65 +375,65 @@ socket.on("receive-message", (msg) => {
   };
 
   // 🔹 ALL USERS FROM BACKEND (using axios instead of apiClient)
-//   const allusers = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await axios.get("http://localhost:8000/api/v1/users",{
-//   headers: { authorization: user.token }
-// });
-//       if (response.data.success !== false) {
-//         setUsers(response.data.users);
-//       }
-//     } catch (error) {
-//       console.error("Failed to fetch users", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-const allusers = async () => {
-  try {
-    const token = user?.token;
-    if (!token) {
-      console.log("User not logged in, token missing");
-      return;
+  //   const allusers = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const response = await axios.get("http://localhost:8000/api/v1/users",{
+  //   headers: { authorization: user.token }
+  // });
+  //       if (response.data.success !== false) {
+  //         setUsers(response.data.users);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch users", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  const allusers = async () => {
+    try {
+      const token = user?.token;
+      if (!token) {
+        console.log("User not logged in, token missing");
+        return;
+      }
+
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users`, {
+        headers: { authorization: `Bearer ${token}` }
+      });
+
+      if (res.data.success) {
+        setUsers(res.data.users);
+      }
+
+    } catch (err) {
+      console.error("Failed to fetch users", err);
     }
+  };
 
-    const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users`, {
-      headers: { authorization: token }
-    });
-
-    if (res.data.success) {
-      setUsers(res.data.users);
+  useEffect(() => {
+    if (user?.token) {
+      allusers();
     }
-
-  } catch (err) {
-    console.error("Failed to fetch users", err);
-  }
-};
-
-useEffect(() => {
-  if (user?.token) {
-    allusers();
-  }
-}, [user]);
+  }, [user]);
 
 
 
   const isOnlineUser = (userId) => userOnline.some((u) => u.userId === userId);
-const handelSelectedUser = (userId) => {
-  const selected = users.find(u => u._id === userId);
+  const handelSelectedUser = (userId) => {
+    const selected = users.find(u => u._id === userId);
 
-  setModalUser(selected);
-  setChatUser(selected);
-  setShowUserDetailModal(true);
+    setModalUser(selected);
+    setChatUser(selected);
+    setShowUserDetailModal(true);
 
-  socket.emit("join-chat", {
+    socket.emit("join-chat", {
       senderId: user._id,
       receiverId: selected._id  // ✅ CORRECT
-  });
+    });
 
-  loadChatHistory(selected._id);
-};
+    loadChatHistory(selected._id);
+  };
 
 
 
@@ -442,58 +442,58 @@ const handelSelectedUser = (userId) => {
     (u.email || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-//   const handleLogout = async () => {
+  //   const handleLogout = async () => {
 
-//     console.log("LOGOUT DEBUG ↓↓↓");
-// console.log("user:", user);
-// console.log("token:", user?.token);
-// console.log("callAccepted:", callAccepted);
-// console.log("reciveCall:", reciveCall);
-// console.log("backend url:", import.meta.env.VITE_BACKEND_URL);
+  //     console.log("LOGOUT DEBUG ↓↓↓");
+  // console.log("user:", user);
+  // console.log("token:", user?.token);
+  // console.log("callAccepted:", callAccepted);
+  // console.log("reciveCall:", reciveCall);
+  // console.log("backend url:", import.meta.env.VITE_BACKEND_URL);
 
-//     if (callAccepted || reciveCall) {
-//       alert("You must end the call before logging out.");
-//       return;
-//     }
-//     try {
-//       // assuming logout endpoint at /api/v1/users/logout
-//       const token = user?.token;
-// if (!token) {
-//   console.log("⚠ No token yet. User not loaded.");
-//   return;
-// }
+  //     if (callAccepted || reciveCall) {
+  //       alert("You must end the call before logging out.");
+  //       return;
+  //     }
+  //     try {
+  //       // assuming logout endpoint at /api/v1/users/logout
+  //       const token = user?.token;
+  // if (!token) {
+  //   console.log("⚠ No token yet. User not loaded.");
+  //   return;
+  // }
 
-// console.log("LOGOUT TOKEN SENT:", user?.token);
+  // console.log("LOGOUT TOKEN SENT:", user?.token);
 
-//       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, {
-//         token: user?.token,
-//       });
-//       socket.off("disconnect");
-//       socket.disconnect();
-//       socketInstance.setSocket();
-//       updateUser(null);
-//       localStorage.removeItem("userData");
-//       navigate('/login');
-//     } catch (error) {
-//       console.error("Logout failed", error);
-//     }
-//   };
-const handleLogout = () => {
-  try {
-    // 1️⃣ kill socket
-    socketInstance.disconnect();
+  //       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/users/logout`, {
+  //         token: user?.token,
+  //       });
+  //       socket.off("disconnect");
+  //       socket.disconnect();
+  //       socketInstance.setSocket();
+  //       updateUser(null);
+  //       localStorage.removeItem("userData");
+  //       navigate('/login');
+  //     } catch (error) {
+  //       console.error("Logout failed", error);
+  //     }
+  //   };
+  const handleLogout = () => {
+    try {
+      // 1️⃣ kill socket
+      socketInstance.disconnect();
 
-    // 2️⃣ clear auth
-    updateUser(null);
-    localStorage.removeItem("userData");
+      // 2️⃣ clear auth
+      updateUser(null);
+      localStorage.removeItem("userData");
 
-    // 3️⃣ redirect
-    navigate("/login");
+      // 3️⃣ redirect
+      navigate("/login");
 
-  } catch (e) {
-    console.error("Logout error:", e);
-  }
-};
+    } catch (e) {
+      console.error("Logout error:", e);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -539,19 +539,19 @@ const handleLogout = () => {
                 ? "bg-green-600"
                 : "bg-gradient-to-r from-purple-600 to-blue-400"
                 }`}
-        onClick={() => {
-    setChatUser(u);
-    setSelectedUser(u._id);
-    setModalUser(u);
-    setShowUserDetailModal(true);
+              onClick={() => {
+                setChatUser(u);
+                setSelectedUser(u._id);
+                setModalUser(u);
+                setShowUserDetailModal(true);
 
-    socket.emit("join-chat", {
-        senderId: user._id,
-        receiverId: u._id
-    });
+                socket.emit("join-chat", {
+                  senderId: user._id,
+                  receiverId: u._id
+                });
 
-    loadChatHistory(u._id);
-}}
+                loadChatHistory(u._id);
+              }}
 
 
             >
@@ -588,7 +588,7 @@ const handleLogout = () => {
       </aside>
 
       {/* Main Content */}
-     {(callUser || reciveCall || callAccepted) ? (
+      {(callUser || reciveCall || callAccepted) ? (
         <div className="relative w-full h-screen bg-black flex items-center justify-center">
           {/* Remote Video or waiting */}
           {callerWating ? (
@@ -644,13 +644,13 @@ const handleLogout = () => {
 
               <FaPhoneSlash size={24} />
             </button>
-<button
-  type="button"
-  onClick={() => setShowChat(!showChat)}
-  className="bg-purple-600 p-4 rounded-full text-white shadow-lg cursor-pointer"
->
-  💬
-</button>
+            <button
+              type="button"
+              onClick={() => setShowChat(!showChat)}
+              className="bg-purple-600 p-4 rounded-full text-white shadow-lg cursor-pointer"
+            >
+              💬
+            </button>
             <button
               type="button"
               onClick={toggleMic}
@@ -709,7 +709,7 @@ const handleLogout = () => {
         </div>
       )}
 
-    
+
 
       {/* Call rejection popup */}
       {callRejectedPopUp && (
@@ -726,7 +726,7 @@ const handleLogout = () => {
               <div className="flex gap-4 mt-5">
                 <button
                   type="button"
-                 onClick={() => startCall(modalUser)}
+                  onClick={() => startCall(modalUser)}
 
                   className="bg-green-500 text-white px-4 py-1 rounded-lg w-28 flex gap-2 justify-center items-center"
                 >
@@ -750,61 +750,60 @@ const handleLogout = () => {
       )}
 
       {/* CHAT PANEL */}
-{showChat && (
-  <div className="absolute right-0 top-0 h-full w-80 bg-gray-900 text-white p-4 flex flex-col z-50 shadow-xl border-l border-gray-700">
+      {showChat && (
+        <div className="absolute right-0 top-0 h-full w-80 bg-gray-900 text-white p-4 flex flex-col z-50 shadow-xl border-l border-gray-700">
 
-    {/* Header */}
-    <div className="flex justify-between items-center mb-3">
-      <h2 className="text-xl font-bold">
-     Chat with {chatUser?.username}
+          {/* Header */}
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl font-bold">
+              Chat with {chatUser?.username}
 
-      </h2>
+            </h2>
 
-      <button
-        onClick={() => setShowChat(false)}
-        className="text-red-400 text-xl font-bold"
-      >
-        ✖
-      </button>
-    </div>
+            <button
+              onClick={() => setShowChat(false)}
+              className="text-red-400 text-xl font-bold"
+            >
+              ✖
+            </button>
+          </div>
 
-    {/* Messages */}
-    <div className="flex-1 overflow-y-auto space-y-3 mb-3">
-      {chatMessages.map((m) => (
-        <div
-   key={m.localId || m._id}
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto space-y-3 mb-3">
+            {chatMessages.map((m) => (
+              <div
+                key={m.localId || m._id}
 
 
-          className={`p-2 rounded-lg max-w-[70%] ${
-            m.senderId === user._id
-              ? "bg-blue-600 ml-auto text-right"
-              : "bg-gray-700"
-          }`}
-        >
-          <p>{m.message}</p>
+                className={`p-2 rounded-lg max-w-[70%] ${m.senderId === user._id
+                    ? "bg-blue-600 ml-auto text-right"
+                    : "bg-gray-700"
+                  }`}
+              >
+                <p>{m.message}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Input */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className="flex-1 p-2 rounded bg-gray-800 outline-none"
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+            />
+            <button
+              className="bg-green-500 px-4 py-2 rounded"
+              onClick={sendMessage}
+            >
+              Send
+            </button>
+          </div>
+
         </div>
-      ))}
-    </div>
-
-    {/* Input */}
-    <div className="flex gap-2">
-      <input
-        type="text"
-        className="flex-1 p-2 rounded bg-gray-800 outline-none"
-        placeholder="Type a message..."
-        value={newMessage}
-        onChange={(e) => setNewMessage(e.target.value)}
-      />
-      <button
-        className="bg-green-500 px-4 py-2 rounded"
-        onClick={sendMessage}
-      >
-        Send
-      </button>
-    </div>
-
-  </div>
-)}
+      )}
 
 
       {/* Incoming Call Modal */}
@@ -841,66 +840,66 @@ const handleLogout = () => {
         </div>
       )}
       {showUserDetailModal && modalUser && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white p-6 rounded-lg w-80 text-black">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg w-80 text-black">
 
-      <h2 className="text-xl font-bold mb-3">User Profile</h2>
+            <h2 className="text-xl font-bold mb-3">User Profile</h2>
 
-      <div className="flex flex-col items-center">
-        <img
-          src={modalUser.profilepic || "/default-avatar.png"}
-          className="w-24 h-24 rounded-full mb-3 border-2 border-purple-500"
-        />
+            <div className="flex flex-col items-center">
+              <img
+                src={modalUser.profilepic || "/default-avatar.png"}
+                className="w-24 h-24 rounded-full mb-3 border-2 border-purple-500"
+              />
 
-        <p className="text-lg font-semibold">{modalUser.username}</p>
-        <p className="text-sm text-gray-600">{modalUser.email}</p>
-      </div>
+              <p className="text-lg font-semibold">{modalUser.username}</p>
+              <p className="text-sm text-gray-600">{modalUser.email}</p>
+            </div>
 
-      {/* BUTTONS */}
-      <div className="mt-5 flex flex-col gap-3">
+            {/* BUTTONS */}
+            <div className="mt-5 flex flex-col gap-3">
 
-        {/* CALL BUTTON */}
-        <button
-          className="bg-green-600 text-white py-2 rounded-md"
-          onClick={() => {
-            setCallUser(modalUser);
-            startCall(modalUser);
-            setShowUserDetailModal(false);
-          }}
-        >
-          📞 Start Call
-        </button>
+              {/* CALL BUTTON */}
+              <button
+                className="bg-green-600 text-white py-2 rounded-md"
+                onClick={() => {
+                  setCallUser(modalUser);
+                  startCall(modalUser);
+                  setShowUserDetailModal(false);
+                }}
+              >
+                📞 Start Call
+              </button>
 
-        {/* CHAT BUTTON */}
-        <button
-          className="bg-blue-600 text-white py-2 rounded-md"
-          onClick={() => {
-            setChatUser(modalUser);
-            setSelectedUser(modalUser._id);
-            loadChatHistory(modalUser._id);
-            setShowChat(true);
-            setShowUserDetailModal(false);
-          }}
-        >
-          💬 Open Chat
-        </button>
+              {/* CHAT BUTTON */}
+              <button
+                className="bg-blue-600 text-white py-2 rounded-md"
+                onClick={() => {
+                  setChatUser(modalUser);
+                  setSelectedUser(modalUser._id);
+                  loadChatHistory(modalUser._id);
+                  setShowChat(true);
+                  setShowUserDetailModal(false);
+                }}
+              >
+                💬 Open Chat
+              </button>
 
-        {/* CLOSE BUTTON */}
-        <button
-          className="bg-gray-500 text-white py-2 rounded-md"
-          onClick={() => setShowUserDetailModal(false)}
-        >
-          ❌ Close
-        </button>
+              {/* CLOSE BUTTON */}
+              <button
+                className="bg-gray-500 text-white py-2 rounded-md"
+                onClick={() => setShowUserDetailModal(false)}
+              >
+                ❌ Close
+              </button>
 
-      </div>
+            </div>
 
-    </div>
-  </div>
-)}
+          </div>
+        </div>
+      )}
 
 
-      
+
 
 
     </div>
