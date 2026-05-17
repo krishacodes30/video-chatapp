@@ -21,22 +21,20 @@ function broadcastOnlineUsers() {
 export const connectToSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: [
+        "http://localhost:5173",
+        "https://video-chatapp-frontend.onrender.com"
+      ],
       methods: ["GET", "POST"],
       credentials: true,
-      // Must explicitly allow Authorization header so the browser doesn't
-      // block it on the polling HTTP handshake requests.
+
       allowedHeaders: ["Authorization", "Content-Type"],
     },
   });
 
   io.use((socket, next) => {
     try {
-      // ── JWT verification via Authorization header ONLY ───────────────────
-      // Token is sent by the client in extraHeaders: { Authorization: "Bearer ..." }
-      // This arrives as socket.handshake.headers.authorization on the server.
-      // We do NOT read from socket.handshake.auth.token (query params / payload)
-      // per security best practice — token must be in the header only.
+
       const authHeader = socket.handshake.headers.authorization ?? "";
 
       if (!authHeader.startsWith("Bearer ")) {

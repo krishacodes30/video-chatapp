@@ -96,7 +96,10 @@ app.use((req, res, next) => {
 //   allowedHeaders: ["Content-Type", "Authorization"]
 // }));
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "https://video-chatapp-frontend.onrender.com"
+  ],
   credentials: true,                                     // ← MUST be true for Authorization header
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],     // ← MUST list Authorization explicitly
@@ -131,7 +134,7 @@ const startServer = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ MongoDB connected");
 
-       server.listen(PORT, "0.0.0.0", () => {
+    server.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
 
